@@ -31,6 +31,7 @@ interface ChatStore {
   setOnlineUsers: (userIds: string[]) => void;
   updateConversationLastMessage: (conversationId: string, message: Message) => void;
   updateMessageReactions: (messageId: string, reactions: any[]) => void;
+  upsertConversation: (conversation: Conversation) => void;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -221,6 +222,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         );
       }
       return { messages: newMessages };
+    });
+  },
+
+  upsertConversation: (conversation) => {
+    set((state) => {
+      const exists = state.conversations.find((c) => c._id === conversation._id);
+      const updated = exists
+        ? state.conversations.map((c) => (c._id === conversation._id ? conversation : c))
+        : [conversation, ...state.conversations];
+      return {
+        conversations: updated.sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        ),
+      };
     });
   },
 }));

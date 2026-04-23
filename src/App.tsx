@@ -6,6 +6,7 @@ import { useSocket } from "./hooks/useSocket";
 import AuthPage from "./components/auth/AuthPage";
 import ChatLayout from "./components/layout/ChatLayout";
 import Spinner from "./components/ui/Spinner";
+import SessionExpiredModal from "./components/ui/SessionExpiredModal";
 
 const AppContent: React.FC = () => {
   useSocket();
@@ -43,7 +44,12 @@ const App: React.FC = () => {
     );
   }
 
-  return <AppContent />;
+  return (
+    <>
+      <AppContent />
+      <SessionExpiredModal />
+    </>
+  );
 };
 
 export default App;

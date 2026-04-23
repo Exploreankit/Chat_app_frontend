@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { getSocket, connectSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
 import { useChatStore } from "../store/chatStore";
-import type { Message } from "../types";
+import type { Conversation, Message } from "../types";
 
 export const useSocket = () => {
   const { token, isAuthenticated } = useAuthStore();
@@ -16,7 +16,7 @@ export const useSocket = () => {
     setOnlineUsers,
     updateConversationLastMessage,
     updateMessageReactions,
-    fetchConversations,
+    upsertConversation,
   } = useChatStore();
 
   useEffect(() => {
@@ -24,24 +24,21 @@ export const useSocket = () => {
 
     const socket = connectSocket(token);
 
+    // New message received
     socket.on("message:new", ({ message }: { message: Message }) => {
       addMessage(message);
       updateConversationLastMessage(message.conversationId, message);
     });
 
+    // Message deleted
     socket.on(
       "message:deleted",
-      ({
-        messageId,
-        conversationId,
-      }: {
-        messageId: string;
-        conversationId: string;
-      }) => {
+      ({ messageId, conversationId }: { messageId: string; conversationId: string }) => {
         deleteMessage(messageId, conversationId);
       }
     );
 
+    // Message reaction updated
     socket.on(
       "message:reacted",
       ({ messageId, reactions }: { messageId: string; reactions: any[] }) => {
@@ -49,33 +46,28 @@ export const useSocket = () => {
       }
     );
 
-    socket.on("typing:start", (data) => {
-      setTypingUser(data);
-    });
-
+    // Typing indicators
+    socket.on("typing:start", (data) => setTypingUser(data));
     socket.on(
       "typing:stop",
-      ({
-        userId,
-        conversationId,
-      }: {
-        userId: string;
-        conversationId: string;
-      }) => {
+      ({ userId, conversationId }: { userId: string; conversationId: string }) => {
         removeTypingUser(userId, conversationId);
       }
     );
 
-    socket.on("user:online", ({ userId }: { userId: string }) => {
-      setUserOnline(userId);
+    // Presence
+    socket.on("user:online", ({ userId }: { userId: string }) => setUserOnline(userId));
+    socket.on("user:offline", ({ userId }: { userId: string }) => setUserOffline(userId));
+    socket.on("users:online", ({ userIds }: { userIds: string[] }) => setOnlineUsers(userIds));
+
+    // A new conversation was created — add it to sidebar for all participants
+    socket.on("conversation:new", ({ conversation }: { conversation: Conversation }) => {
+      upsertConversation(conversation);
     });
 
-    socket.on("user:offline", ({ userId }: { userId: string }) => {
-      setUserOffline(userId);
-    });
-
-    socket.on("users:online", ({ userIds }: { userIds: string[] }) => {
-      setOnlineUsers(userIds);
+    // Conversation metadata updated (e.g. lastMessage changed)
+    socket.on("conversation:updated", ({ conversation }: { conversation: Conversation }) => {
+      upsertConversation(conversation);
     });
 
     return () => {
@@ -87,6 +79,8 @@ export const useSocket = () => {
       socket.off("user:online");
       socket.off("user:offline");
       socket.off("users:online");
+      socket.off("conversation:new");
+      socket.off("conversation:updated");
     };
   }, [isAuthenticated, token]);
 };

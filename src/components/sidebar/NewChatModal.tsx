@@ -47,7 +47,9 @@ const NewChatModal: React.FC<Props> = ({ onClose }) => {
       setActiveConversation(conv);
       fetchMessages(conv._id);
       const socket = getSocket();
+      // Join room locally and notify server to push to other participant
       socket?.emit("conversation:join", conv._id);
+      socket?.emit("conversation:created", { conversationId: conv._id });
       onClose();
     } finally {
       setIsCreating(false);
@@ -66,6 +68,7 @@ const NewChatModal: React.FC<Props> = ({ onClose }) => {
       fetchMessages(conv._id);
       const socket = getSocket();
       socket?.emit("conversation:join", conv._id);
+      socket?.emit("conversation:created", { conversationId: conv._id });
       onClose();
     } finally {
       setIsCreating(false);

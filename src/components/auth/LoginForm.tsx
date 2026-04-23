@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 
+const SEED_USERS = [
+  { label: "Alice", email: "alice@syncly.dev", password: "password123" },
+  { label: "Bob",   email: "bob@syncly.dev",   password: "password123" },
+  { label: "Charlie", email: "charlie@syncly.dev", password: "password123" },
+];
+
 const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuthStore();
   const [email, setEmail] = useState("");
@@ -18,6 +24,12 @@ const LoginForm: React.FC = () => {
     }
   };
 
+  const fillCredentials = (seedEmail: string, seedPassword: string) => {
+    setEmail(seedEmail);
+    setPassword(seedPassword);
+    setError("");
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
@@ -25,6 +37,29 @@ const LoginForm: React.FC = () => {
           {error}
         </div>
       )}
+
+      {/* ── Seed credentials ─────────────────────────────────────────────── */}
+      <div className="rounded-lg border border-[#1e2d45] bg-[#0d1117]/60 p-3">
+        <p className="text-[#8696a0] text-xs font-medium uppercase tracking-wide mb-2">
+          🧪 Test accounts — click to fill
+        </p>
+        <div className="flex gap-2">
+          {SEED_USERS.map((u) => (
+            <button
+              key={u.email}
+              type="button"
+              onClick={() => fillCredentials(u.email, u.password)}
+              className="flex-1 py-1.5 rounded-md text-xs font-semibold border border-[#4f8ef7]/40 text-[#4f8ef7] hover:bg-[#4f8ef7]/10 active:bg-[#4f8ef7]/20 transition-colors"
+            >
+              {u.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-[#8696a0]/60 text-[11px] mt-2 text-center">
+          All accounts share password&nbsp;
+          <span className="font-mono text-[#8696a0]">password123</span>
+        </p>
+      </div>
 
       <div>
         <label className="block text-[#8696a0] text-xs font-medium mb-2 uppercase tracking-wide">
